@@ -2,6 +2,7 @@
 @using DataEntities
 @using Store.Services
 @inject IConfiguration Configuration
+@inject ProductService ProductService
 @rendermode InteractiveServer
 @attribute [StreamRendering(true)]
 
@@ -13,12 +14,37 @@
 
 @if (products == null)
 {
-    <p><em>Loading...</em></p>
+    <div class="d-flex align-items-center" aria-live="polite" aria-busy="true">
+        <div class="spinner-border spinner-border-sm text-secondary me-2" role="status" aria-hidden="true"></div>
+        <span>Loading...</span>
+    </div>
 }
 else
 {
-    <!--Implement Products table here-->
-    <p>Under construction...</p>
+    if (products.Count == 0)
+    {
+        <p>No products found.</p>
+    }
+    else
+    {
+        <ul class="products-grid">
+            @foreach (var product in products)
+            {
+                <li class="product-card">
+                    <img src="@GetImageUrl(product.ImageUrl)"
+                         alt="@product.Name"
+                         class="product-image" />
+                    <div class="product-info">
+                        <div class="product-title-price">
+                            <h3 class="product-name">@product.Name</h3>
+                            <p class="product-price">@product.Price.ToString("C")</p>
+                        </div>
+                        <p class="product-description">@product.Description</p>
+                    </div>
+                </li>
+            }
+        </ul>
+    }
 
 }
 
@@ -28,10 +54,18 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        // Simulate asynchronous loading to demonstrate streaming rendering
-        await Task.Delay(500);
         imagePrefix = Configuration["ImagePrefix"]!;
-        products = [];
+        products = await ProductService.GetProducts();
+    }
+
+    private string GetImageUrl(string? imageUrl)
+    {
+        if (string.IsNullOrWhiteSpace(imageUrl))
+        {
+            return imagePrefix;
+        }
+
+        return $"{imagePrefix}{imageUrl}";
     }
 
 }
