@@ -1,0 +1,106 @@
+@page "/products/{id:int}"
+@using DataEntities
+@using Store.Services
+@inject IConfiguration Configuration
+@inject ProductService ProductService
+@rendermode InteractiveServer
+@attribute [StreamRendering(true)]
+
+<PageTitle>Product Details</PageTitle>
+
+@if (isLoading)
+{
+    <div class="d-flex align-items-center" aria-live="polite" aria-busy="true">
+        <div class="spinner-border spinner-border-sm text-secondary me-2" role="status" aria-hidden="true"></div>
+        <span>Loading...</span>
+    </div>
+}
+else if (product is null)
+{
+    <h1>Product not found</h1>
+    <p>We couldn't find that product. It may have been removed or the link is invalid.</p>
+    <p><a href="/products">Back to products</a></p>
+}
+else
+{
+    <h1>@product.Name</h1>
+
+    <article class="product-detail-card">
+        <img src="@GetImageUrl(product.ImageUrl)"
+             alt="@product.Name"
+             class="product-detail-image" />
+        <p class="product-detail-price">@product.Price.ToString("C")</p>
+        <p class="product-detail-description">@product.Description</p>
+    </article>
+
+    <p><a class="back-link" href="/products">Back to products</a></p>
+}
+
+@code {
+    [Parameter]
+    public int id { get; set; }
+
+    private Product? product;
+    private string imagePrefix = string.Empty;
+    private bool isLoading = true;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        imagePrefix = Configuration["ImagePrefix"]!;
+
+        if (id <= 0)
+        {
+            product = null;
+            isLoading = false;
+            return;
+        }
+
+        isLoading = true;
+        product = await ProductService.GetProduct(id);
+        isLoading = false;
+    }
+
+    private string GetImageUrl(string? imageUrl)
+    {
+        if (string.IsNullOrWhiteSpace(imageUrl))
+        {
+            return imagePrefix;
+        }
+
+        return $"{imagePrefix}{imageUrl}";
+    }
+}
+
+<style>
+    .product-detail-card {
+        padding: 1rem;
+        max-width: 640px;
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        background-color: #fff;
+    }
+
+    .product-detail-image {
+        display: block;
+        width: 100%;
+        max-width: 420px;
+        height: auto;
+        margin-bottom: 1rem;
+    }
+
+    .product-detail-price {
+        font-weight: 700;
+        margin-bottom: 0.75rem;
+    }
+
+    .product-detail-description {
+        margin: 0;
+        line-height: 1.5;
+        color: #4b5563;
+    }
+
+    .back-link {
+        display: inline-block;
+        margin-top: 0.75rem;
+    }
+</style>
